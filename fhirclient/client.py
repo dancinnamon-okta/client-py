@@ -54,6 +54,9 @@ class FHIRClient(object):
         self.patient_id = None
         self._patient = None
         
+        #Handle downscoping.
+        self.authorized_scopes = None
+        
         if save_func is None:
             raise Exception("Must supply a save_func when initializing the SMART client")
         self._save_func = save_func
@@ -148,6 +151,11 @@ class FHIRClient(object):
             self.patient_id = ctx['patient']        # TODO: TEST THIS!
         if 'id_token' in ctx:
             logger.warning("SMART: Received an id_token, ignoring")
+            
+        #Let's keep track of what the authz server says we have for scopes.    
+        if 'scope' in ctx:
+            self.authorized_scopes = ctx['scope']
+            
         self.launch_context = ctx
         self.save_state()
     
@@ -200,6 +208,7 @@ class FHIRClient(object):
         self.launch_context = None
         self.patient_id = None
         self._patient = None
+        self.authorized_scopes = None
         self.save_state()
     
     @property
@@ -213,6 +222,7 @@ class FHIRClient(object):
             'server': self.server.state,
             'launch_token': self.launch_token,
             'launch_context': self.launch_context,
+            'authorized_scopes': self.authorized_scopes
         }
     
     def from_state(self, state):
@@ -224,6 +234,7 @@ class FHIRClient(object):
         self.patient_id = state.get('patient_id') or self.patient_id
         self.launch_token = state.get('launch_token') or self.launch_token
         self.launch_context = state.get('launch_context') or self.launch_context
+        self.authorized_scopes = state.get('authorized_scopes') or self.authorized_scopes
         self.server = FHIRServer(self, state=state.get('server'))
     
     def save_state (self):
